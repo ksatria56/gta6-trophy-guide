@@ -208,3 +208,44 @@ html[data-theme="night"] .tag.missable { background: #3a1713; }
 
 /* Round 5: keep the picker's buttons from wrapping mid-label on narrow screens. */
 .pickActions button { white-space: nowrap; }
+
+/* Round 6: platinum-time calculator, recommender and region bars. */
+.timeGrid { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 12px; margin: 16px 0; }
+.timeCard { background: var(--panel); border: 1px solid var(--line); border-radius: var(--radius); padding: 12px 14px; }
+.timeCard p { margin: 2px 0; }
+.timeNum { font: 700 26px/1.2 Georgia, serif; color: var(--accent); }
+.paceRow { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; margin: 14px 0; }
+.paceRow p { margin: 0 4px 0 0; font-weight: 700; }
+.paceRow button.active { background: var(--accent); color: var(--accent-ink); border-color: var(--accent); }
+.finishLine { font-weight: 700; margin: 12px 0 20px; }
+.stageHoursRow { margin: 10px 0; }
+.stageHoursRow p { margin: 0 0 4px; }
+.regionBar { height: 10px; background: var(--line); border-radius: 6px; overflow: hidden; }
+.regionFill { height: 100%; background: var(--accent); }
+.regionRow { background: var(--panel); border: 1px solid var(--line); border-radius: var(--radius); padding: 12px 14px; margin: 10px 0; }
+.regionRow h3 { margin: 0 0 4px; }
+.regionRow p { margin: 4px 0; }
+.recoCard { background: var(--panel); border: 1px solid var(--line); border-radius: var(--radius); padding: 14px 16px; margin: 12px 0; }
+.recoRank { margin: 0 0 4px; color: var(--muted); font-size: 12px; text-transform: uppercase; letter-spacing: 0.06em; }
+.recoDiff { color: var(--muted); font-size: 13px; margin: 6px 0 0; }
+.recoReasons { margin: 8px 0 12px; padding-left: 20px; }
+.recoReasons li { margin: 2px 0; }
+.diffTag { color: var(--gold); }
+
+/* Round 6 (part 2): streak calendar, timeline, markdown export, planner strip. */
+.streakCal { display: grid; grid-template-columns: repeat(7, 1fr); gap: 6px; margin: 12px 0; }
+.streakDay { border: 1px solid var(--line); border-radius: 8px; padding: 6px 4px; text-align: center; font-size: 12px; }
+.streakDay p { margin: 0; }
+.streakDay.hit { background: var(--accent); color: var(--accent-ink); border-color: var(--accent); }
+.goalRow { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; margin: 14px 0; }
+.goalRow p { margin: 0; font-weight: 700; }
+.goalRow input { width: 64px; padding: 6px 8px; border: 1px solid var(--line); border-radius: 8px; background: var(--panel); color: var(--ink); }
+.timelineRow { margin: 12px 0; }
+.timelineRow p { margin: 0 0 4px; }
+.mdBox { width: 100%; min-height: 320px; font: 13px/1.5 ui-monospace, Menlo, monospace; padding: 12px; border: 1px solid var(--line); border-radius: var(--radius); background: var(--panel); color: var(--ink); resize: vertical; }
+#quickStats { padding: 10px 32px; color: var(--muted); font-size: 13px; border-bottom: 1px solid var(--line); }
+#quickStats:empty { display: none; }
+@media print {
+  #mainNav, #toolbar, #detailPane, .pickBox { display: none; }
+  body { background: #fff; color: #000; }
+}
