@@ -3,6 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="theme-color" content="#d24e2a">
 <title>Leonida Ledger — GTA VI Trophy Guide &amp; Tracker</title>
 <meta name="description" content="The offline guide and tracker for all 55 Grand Theft Auto VI trophies on PlayStation 5: checklist, roadmap, missables, and a cited guide for every trophy.">
 <link rel="stylesheet" href="css/base.css">
@@ -53,9 +54,12 @@
       <option value="money">Money</option>
       <option value="choice">Choices</option>
       <option value="meta">Platinum path</option>
+      <option value="missable">Missable only</option>
     </select>
   </label>
   <label id="spoilerLabel"><input id="spoilerToggle" type="checkbox"> Hide story spoilers</label>
+  <label id="unearnedLabel"><input id="unearnedToggle" type="checkbox"> Unearned only</label>
+  <span id="filterCount" aria-live="polite"></span>
   <label id="themeLabel"><input id="themeToggle" type="checkbox"> Night theme</label>
   <button id="exportBtn" type="button">Export progress</button>
   <label id="importLabel">Import progress <input id="importFile" type="file" accept="application/json"></label>
