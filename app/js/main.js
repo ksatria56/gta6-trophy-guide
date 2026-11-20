@@ -1,4 +1,5 @@
 // Leonida Ledger boot: load the trophy list, wire the toolbar, route the views.
+import { countUnearned, filterTrophies } from './filters.js';
 import { loadState, saveState, exportProgress, importProgress } from './store.js';
 import { renderChecklist, renderDetail, renderMissables, renderPlanner, renderProgress, renderRoadmap, renderSave } from './views.js';
 
@@ -9,6 +10,8 @@ const search = document.getElementById('search');
 const gradeFilter = document.getElementById('gradeFilter');
 const kindFilter = document.getElementById('kindFilter');
 const spoilerToggle = document.getElementById('spoilerToggle');
+const unearnedToggle = document.getElementById('unearnedToggle');
+const filterCount = document.getElementById('filterCount');
 const themeToggle = document.getElementById('themeToggle');
 
 const doc = await (await fetch('data/trophies.json')).json();
@@ -17,7 +20,16 @@ const sources = doc.sources;
 const state = loadState();
 
 function controls() {
-  return { query: search.value, grade: gradeFilter.value, kind: kindFilter.value };
+  return { query: search.value, grade: gradeFilter.value, kind: kindFilter.value, unearned: unearnedToggle.checked };
+}
+
+// The toolbar's count label: how many trophies the current filters show, so a
+// narrowed search never looks like a missing trophy. Blank off the checklist.
+function updateFilterCount() {
+  const page = (location.hash || '#/').replace(/^#\//, '').split('/')[0] || '';
+  if (page !== '' && page !== 'trophy') { filterCount.textContent = ''; return; }
+  const shown = filterTrophies(trophies, state, search.value, gradeFilter.value, kindFilter.value, unearnedToggle.checked).length;
+  filterCount.textContent = `${shown} of ${trophies.length} shown · ${countUnearned(trophies, state)} left to earn`;
 }
 
 function setNav(route) {
@@ -35,6 +47,7 @@ function route() {
     if (pane.hidden) { location.hash = '#/'; return; }
     renderChecklist(view, trophies, state, controls());
     setNav('checklist');
+    updateFilterCount();
     return;
   }
   pane.hidden = true;
@@ -44,6 +57,7 @@ function route() {
   else if (page === 'save') { renderSave(view, trophies, state); setNav('save'); }
   else { renderChecklist(view, trophies, state, controls()); setNav('checklist'); }
   renderProgress(trophies, state);
+  updateFilterCount();
 }
 
 function applySettings() {
@@ -67,6 +81,24 @@ themeToggle.addEventListener('change', () => {
 search.addEventListener('input', () => route());
 gradeFilter.addEventListener('change', () => route());
 kindFilter.addEventListener('change', () => route());
+unearnedToggle.addEventListener('change', () => route());
+
+// Press / anywhere to jump to the search box (unless already typing in a field).
+window.addEventListener('keydown', (event) => {
+  if (event.key !== '/' || event.metaKey || event.ctrlKey || event.altKey) return;
+  const tag = document.activeElement?.tagName;
+  if (tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT') return;
+  event.preventDefault();
+  search.focus();
+});
+
+// Press Escape to close the trophy guide pane and return to the checklist.
+window.addEventListener('keydown', (event) => {
+  if (event.key !== 'Escape') return;
+  if (pane.hidden) return;
+  pane.hidden = true;
+  location.hash = '#/';
+});
 
 document.getElementById('exportBtn').addEventListener('click', () => {
   const a = document.createElement('a');

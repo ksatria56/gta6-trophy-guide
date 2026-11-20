@@ -33,6 +33,29 @@ export function toggleEarned(state, id) {
   return state;
 }
 
+// Clear one trophy's progress only: its tick, its counter and its note go,
+// everything else in the save stays untouched.
+export function resetOneTrophy(state, id) {
+  state.earned = state.earned.filter((x) => x !== id);
+  delete state.counters[id];
+  delete state.notes[id];
+  saveState(state);
+  return state;
+}
+
+// Progress as a whole percent of the list: the planner's headline number,
+// rounded so 27 of 55 reads as 49% rather than a long decimal.
+export function progressPercent(state, total) {
+  if (!total) return 0;
+  return Math.round((state.earned.length / total) * 100);
+}
+
+// How many trophies are earned: the save page reads this instead of reaching
+// into the state's earned list itself.
+export function countEarned(state) {
+  return state.earned.length;
+}
+
 export function readCounter(state, id) {
   return state.counters[id] ?? 0;
 }

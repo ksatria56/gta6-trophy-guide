@@ -1,4 +1,5 @@
-// Filtering for the checklist: text search, grade, kind, and the spoiler rule.
+// Filtering for the checklist: text search, grade, kind, the spoiler rule, and
+// an unearned-only switch for players who only want what is left to chase.
 // The spoiler rule hides the names and descriptions of story trophies until
 // they are earned; everything else stays visible.
 export const KIND_LABELS = {
@@ -17,9 +18,10 @@ export function spoilerHidden(trophy, state) {
   return state.spoiler && trophy.kind === 'story' && !state.earned.includes(trophy.id);
 }
 
-export function filterTrophies(trophies, state, query, grade, kind) {
+export function filterTrophies(trophies, state, query, grade, kind, onlyUnearned = false) {
   const q = query.trim().toLowerCase();
   return trophies.filter((t) => {
+    if (onlyUnearned && state.earned.includes(t.id)) return false;
     if (grade !== 'all' && t.grade !== grade) return false;
     if (kind === 'missable') {
       if (t.missable !== 'yes' && t.missable !== 'maybe') return false;
@@ -28,6 +30,22 @@ export function filterTrophies(trophies, state, query, grade, kind) {
     const hay = `${t.name} ${t.description} ${t.guide} ${KIND_LABELS[t.kind] ?? ''}`.toLowerCase();
     return q.split(/\s+/).every((word) => hay.includes(word));
   });
+}
+
+// How many trophies are still unearned: the "left to chase" count the toolbar
+// and the planner show next to the filtered total.
+export function countUnearned(trophies, state) {
+  return trophies.filter((t) => !state.earned.includes(t.id)).length;
+}
+
+// The missables still to earn: the planner's warning line counts these, so a
+// player sees at a glance how many moments-that-can-pass are left.
+export function unearnedMissables(trophies, state) {
+  return missableTrophiesList(trophies).filter((t) => !state.earned.includes(t.id));
+}
+
+function missableTrophiesList(trophies) {
+  return trophies.filter((t) => t.missable === 'yes' || t.missable === 'maybe');
 }
 
 export function countByGrade(trophies, state) {

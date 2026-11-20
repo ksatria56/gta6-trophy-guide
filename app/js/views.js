@@ -1,10 +1,27 @@
 // Views for Leonida Ledger: the checklist, the trophy guide pane, the roadmap,
 // the missables page, the Next-up planner and the save page.
-import { KIND_LABELS, countByGrade, filterTrophies, spoilerHidden } from './filters.js';
+import { KIND_LABELS, countByGrade, filterTrophies, spoilerHidden, unearnedMissables } from './filters.js';
 import { ROADMAP_STAGES, missableTrophies, nextUpQueue, stageProgress } from './roadmap.js';
-import { bumpCounter, isEarned, readCounter, readNote, toggleEarned, writeNote } from './store.js';
+import { bumpCounter, countEarned, isEarned, progressPercent, readCounter, readNote, resetOneTrophy, toggleEarned, writeNote } from './store.js';
 
 const GRADE_ORDER = ['platinum', 'gold', 'silver', 'bronze'];
+
+// The random picker remembers its last choice, so "Pick another" never hands
+// back the same trophy twice in a row while there is anything else to chase.
+// The picker's short memory: the last three picks, shown under the new card
+// so a player can retrace what Leonida already suggested this session.
+const pickHistory = [];
+let lastPickId = null;
+
+function pickFrom(pool) {
+  if (!pool.length) return null;
+  if (pool.length === 1) return pool[0];
+  let choice = pool[Math.floor(Math.random() * pool.length)];
+  if (choice.id === lastPickId) {
+    choice = pool[(pool.indexOf(choice) + 1) % pool.length];
+  }
+  return choice;
+}
 
 function el(tag, cls, text) {
   const node = document.createElement(tag);
@@ -38,9 +55,68 @@ export function renderChecklist(view, trophies, state, controls) {
   const head = el('h2', null, 'The checklist');
   const lede = el('p', 'lede', 'All 55 official trophies. Tick one off when you earn it — progress is saved in this browser. Open a trophy for its full guide and its sources.');
   view.append(head, lede);
+  const rows = filterTrophies(trophies, state, controls.query, controls.grade, controls.kind, controls.unearned);
+  const pickBox = el('div', 'pickBox');
+  const pickIntro = el('p', 'pickIntro', 'Can’t decide what to chase next? Let Leonida choose.');
+  const pickBtn = el('button', null, 'Pick one for me');
+  pickBtn.type = 'button';
+  const pickResult = el('div', 'pickResult');
+  pickBtn.addEventListener('click', () => {
+    const pool = rows.filter((t) => !isEarned(state, t.id));
+    pickResult.replaceChildren();
+    if (!rows.length) {
+      pickResult.append(el('p', 'empty', 'Nothing matches those filters — clear the search or pick another kind, then try again.'));
+      return;
+    }
+    if (!pool.length) {
+      pickResult.append(el('p', 'empty', 'Every trophy matching those filters is already earned. Widen the filters for a fresh pick.'));
+      return;
+    }
+    const pick = pickFrom(pool);
+    lastPickId = pick.id;
+    pickHistory.unshift(pick);
+    if (pickHistory.length > 3) pickHistory.pop();
+    const card = el('article', 'pickCard');
+    const hidden = spoilerHidden(pick, state);
+    const name = el('p', 'trophyName', hidden ? 'Hidden story trophy' : pick.name);
+    name.append(el('span', 'gradeTag', pick.grade));
+    const desc = el('p', 'trophyDesc', hidden ? 'Earn it to reveal the description.' : pick.description);
+    const meta = el('div', 'trophyMeta');
+    meta.append(el('span', 'tag', KIND_LABELS[pick.kind] ?? pick.kind));
+    if (pick.missable === 'yes') meta.append(el('span', 'tag missable', 'Missable'));
+    if (pick.missable === 'maybe') meta.append(el('span', 'tag missable', 'Possibly missable'));
+    if (pick.target) meta.append(el('span', 'tag target', `${readCounter(state, pick.id)} / ${pick.target.count} ${pick.target.label}`));
+    const open = el('button', 'ghost', 'Open the guide →');
+    open.type = 'button';
+    open.addEventListener('click', () => { location.hash = `#/trophy/${pick.id}`; });
+    const again = el('button', null, 'Pick another');
+    again.type = 'button';
+    again.addEventListener('click', () => pickBtn.click());
+    const actions = el('div', 'pickActions');
+    actions.append(open, again);
+    const count = el('p', 'pickCount', `${pool.length} unearned ${pool.length === 1 ? 'trophy' : 'trophies'} match — start with this one:`);
+    card.append(count, name, desc);
+    if (pick.hint && !hidden) card.append(el('p', 'hint', `Hint: ${pick.hint}`));
+    card.append(meta, actions);
+    if (pickHistory.length > 1) {
+      card.append(el('p', 'pickHistory', `Previously picked: ${pickHistory.slice(1).map((t) => spoilerHidden(t, state) ? 'Hidden story trophy' : t.name).join(' · ')}`));
+    }
+    pickResult.append(card);
+  });
+  // Forget the picker's short memory: clears the last-pick guard and the
+  // history line, so the next pick starts fresh instead of avoiding a trophy
+  // that was only picked because the filters were narrow.
+  const forgetBtn = el('button', 'ghost', 'Forget previous picks');
+  forgetBtn.type = 'button';
+  forgetBtn.addEventListener('click', () => {
+    pickHistory.length = 0;
+    lastPickId = null;
+    pickResult.replaceChildren();
+  });
+  pickBox.append(pickIntro, pickBtn, forgetBtn, pickResult);
+  view.append(pickBox);
   const list = el('div', null);
   list.id = 'checklist';
-  const rows = filterTrophies(trophies, state, controls.query, controls.grade, controls.kind);
   if (!rows.length) {
     list.append(el('p', 'empty', 'No trophies match those filters. Clear the search or pick another kind.'));
   }
@@ -92,6 +168,7 @@ export function renderDetail(pane, body, trophies, sources, state, onClose) {
   const guideHead = el('h3', null, 'How to get it');
   const guide = el('p', null, t.guide);
   body.append(title, gradeLine, official, guideHead, guide);
+  if (t.hint) body.append(el('p', 'hint', `Hint: ${t.hint}`));
   if (t.steps && t.steps.length) {
     body.append(el('h3', null, 'Steps'));
     const ol = el('ol', null);
@@ -148,6 +225,15 @@ export function renderDetail(pane, body, trophies, sources, state, onClose) {
   body.append(note);
   const earned = el('p', null, isEarned(state, t.id) ? '✓ Earned — ticked on your checklist.' : 'Not earned yet.');
   body.append(earned);
+  const resetOne = el('button', 'ghost', 'Clear this trophy’s progress');
+  resetOne.type = 'button';
+  resetOne.addEventListener('click', () => {
+    if (!window.confirm(`Clear the tick, counter and note for “${t.name}”?`)) return;
+    resetOneTrophy(state, t.id);
+    location.hash = '#/';
+    location.reload();
+  });
+  body.append(resetOne);
   onClose();
 }
 
@@ -161,6 +247,7 @@ export function renderRoadmap(view, trophies, state) {
     const { done, total } = stageProgress(stage, byId, state);
     card.append(el('h3', null, `${stage.title} — ${done}/${total}`));
     card.append(el('p', null, stage.blurb));
+    if (stage.tip) card.append(el('p', 'stageTip', stage.tip));
     const bar = el('div', 'stageBar');
     bar.append(el('div', null));
     bar.firstChild.style.width = `${(done / total) * 100}%`;
@@ -220,13 +307,16 @@ export function renderPlanner(view, trophies, state) {
     list.append(line);
   });
   view.append(list);
+  view.append(el('p', 'plannerNote', `You are ${progressPercent(state, trophies.length)}% of the way to the platinum.`));
+  const missLeft = unearnedMissables(trophies, state).length;
+  view.append(el('p', 'plannerNote', `${missLeft} missable ${missLeft === 1 ? 'trophy' : 'trophies'} still to earn — do those before the finale.`));
   view.append(el('p', 'lede', `${queue.length} trophies left to earn.`));
 }
 
 export function renderSave(view, trophies, state) {
   view.replaceChildren();
   view.append(el('h2', null, 'Save & settings'));
-  const earned = state.earned.length;
+  const earned = countEarned(state);
   view.append(el('p', 'lede', `You have earned ${earned} of ${trophies.length} trophies. Progress lives in this browser's local storage. Export it to a file before you clear the browser — import it back any time.`));
   const callout = el('div', 'callout');
   callout.append(el('p', null, 'Spoiler setting: with “Hide story spoilers” on, the names and descriptions of story trophies stay hidden until you earn them. Night theme swaps the paper look for a dark one. Both settings are saved with your progress.'));

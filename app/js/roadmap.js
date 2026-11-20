@@ -7,18 +7,21 @@ export const ROADMAP_STAGES = [
     id: 'story',
     title: '1 · The story',
     blurb: 'Play Chapters 1–4 and the finale, and take the named missions as they come. Do the two partner trophies before the final mission.',
+    tip: 'Save before the final mission and do the partner trophies first — a manual save is the only way back if the finale locks them out.',
     ids: [2, 3, 4, 5, 6, 8, 9, 10, 11, 12, 13, 33, 34, 7],
   },
   {
     id: 'strangers',
     title: '2 · Strangers across Leonida',
     blurb: 'Eight stranger strands earn the silver. Finish Andy, Kenton, Billy, Randy and Tyrone too — each one ends in its own trophy.',
+    tip: 'Stranger strands open up as the story moves — check back after each chapter, since a strand only appears once its chapter has begun.',
     ids: [22, 23, 24, 26, 27, 25, 29],
   },
   {
     id: 'activities',
     title: '3 · Activities',
     blurb: 'The long counts live here: 250 stunts, 42 gold shooting-range challenges, 20 race wins, 50 challenges. Chip at them between story beats.',
+    tip: 'The long counts reward steady play: a few stunts or one race win between story missions keeps the grind from piling up at the end.',
     ids: [16, 21, 20, 28, 46, 51, 18, 19, 17, 15, 32],
   },
   {
