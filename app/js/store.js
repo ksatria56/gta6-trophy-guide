@@ -27,8 +27,13 @@ export function isEarned(state, id) {
 
 export function toggleEarned(state, id) {
   const at = state.earned.indexOf(id);
-  if (at === -1) state.earned.push(id);
-  else state.earned.splice(at, 1);
+  if (at === -1) {
+    state.earned.push(id);
+    recordEarned(state, id);
+  } else {
+    state.earned.splice(at, 1);
+    recordUnearned(state, id);
+  }
   saveState(state);
   return state;
 }
@@ -91,4 +96,97 @@ export function importProgress(text) {
   const state = parsed.state ?? parsed;
   if (!Array.isArray(state.earned)) throw new Error('not a Leonida Ledger progress file');
   return { ...blankState(), ...state };
+}
+
+// --- Round 6: earned-date log, weekly goal and streak ---
+// Every earned tick is stamped with the day it happened, so the guide can
+// show a streak and a weekly goal without asking the player to keep a diary.
+// The log is capped so a years-old save stays small.
+export function earnLog(state) {
+  if (!Array.isArray(state.earnLog)) state.earnLog = [];
+  return state.earnLog;
+}
+
+export function recordEarned(state, id, day) {
+  const stamp = day ?? new Date().toISOString().slice(0, 10);
+  const log = earnLog(state);
+  if (!log.some((entry) => entry.id === id && entry.day === stamp)) {
+    log.push({ id, day: stamp });
+    if (log.length > 400) log.splice(0, log.length - 400);
+  }
+  saveState(state);
+}
+
+export function recordUnearned(state, id) {
+  state.earnLog = earnLog(state).filter((entry) => entry.id !== id);
+  saveState(state);
+}
+
+export function weeklyGoal(state) {
+  const goal = Number(state.weeklyGoal);
+  return Number.isInteger(goal) && goal > 0 && goal <= 55 ? goal : 3;
+}
+
+export function setWeeklyGoal(state, goal) {
+  const next = Math.max(1, Math.min(55, Math.round(Number(goal) || 3)));
+  state.weeklyGoal = next;
+  saveState(state);
+  return next;
+}
+
+export function earnedOnDay(state, day) {
+  return earnLog(state).filter((entry) => entry.day === day).length;
+}
+
+// --- Round 6 (part 2): streak and weekly pace ---
+// A streak is consecutive days with at least one earned trophy, counted back
+// from today (or yesterday, so a streak does not die before breakfast). The
+// week count is the last seven days including today.
+function dayOffset(today, back) {
+  const date = new Date(`${today}T00:00:00Z`);
+  date.setUTCDate(date.getUTCDate() - back);
+  return date.toISOString().slice(0, 10);
+}
+
+export function earnedThisWeek(state, today) {
+  const now = today ?? new Date().toISOString().slice(0, 10);
+  let count = 0;
+  for (let back = 0; back < 7; back++) count += earnedOnDay(state, dayOffset(now, back));
+  return count;
+}
+
+export function streakDays(state, today) {
+  const now = today ?? new Date().toISOString().slice(0, 10);
+  let start = 0;
+  if (!earnedOnDay(state, now)) start = 1;
+  let streak = 0;
+  for (let back = start; ; back++) {
+    if (!earnedOnDay(state, dayOffset(now, back))) break;
+    streak += 1;
+  }
+  return streak;
+}
+
+export function longestStreak(state) {
+  const days = [...new Set(earnLog(state).map((entry) => entry.day))].sort();
+  let best = 0;
+  let run = 0;
+  let prev = null;
+  for (const day of days) {
+    const gap = prev ? (new Date(`${day}T00:00:00Z`) - new Date(`${prev}T00:00:00Z`)) / 86400000 : 2;
+    run = gap === 1 ? run + 1 : 1;
+    best = Math.max(best, run);
+    prev = day;
+  }
+  return best;
+}
+
+export function weekCalendar(state, today) {
+  const now = today ?? new Date().toISOString().slice(0, 10);
+  const days = [];
+  for (let back = 13; back >= 0; back--) {
+    const day = dayOffset(now, back);
+    days.push({ day, count: earnedOnDay(state, day) });
+  }
+  return days;
 }

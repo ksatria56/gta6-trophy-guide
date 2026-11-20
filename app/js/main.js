@@ -1,7 +1,8 @@
 // Leonida Ledger boot: load the trophy list, wire the toolbar, route the views.
 import { countUnearned, filterTrophies } from './filters.js';
-import { loadState, saveState, exportProgress, importProgress } from './store.js';
-import { renderChecklist, renderDetail, renderMissables, renderPlanner, renderProgress, renderRoadmap, renderSave } from './views.js';
+import { loadState, saveState, exportProgress, importProgress, earnedThisWeek, weeklyGoal } from './store.js';
+import { platinumTimeEstimate } from './roadmap.js';
+import { renderChecklist, renderDetail, renderMarkdownExport, renderMissables, renderPlanner, renderProgress, renderRegions, renderRoadmap, renderSave, renderStreak, renderTimeCalc, renderTimeline, renderRecommender } from './views.js';
 
 const view = document.getElementById('view');
 const pane = document.getElementById('detailPane');
@@ -17,10 +18,12 @@ const themeToggle = document.getElementById('themeToggle');
 const doc = await (await fetch('data/trophies.json')).json();
 const trophies = doc.trophies;
 const sources = doc.sources;
+const estimates = doc.estimates ?? {};
+const regions = doc.regions ?? {};
 const state = loadState();
 
 function controls() {
-  return { query: search.value, grade: gradeFilter.value, kind: kindFilter.value, unearned: unearnedToggle.checked };
+  return { query: search.value, grade: gradeFilter.value, kind: kindFilter.value, unearned: unearnedToggle.checked, estimates };
 }
 
 // The toolbar's count label: how many trophies the current filters show, so a
@@ -55,9 +58,26 @@ function route() {
   else if (page === 'missables') { renderMissables(view, trophies, state); setNav('missables'); }
   else if (page === 'planner') { renderPlanner(view, trophies, state); setNav('planner'); }
   else if (page === 'save') { renderSave(view, trophies, state); setNav('save'); }
+  else if (page === 'time') { renderTimeCalc(view, trophies, state, estimates); setNav('time'); }
+  else if (page === 'next') { renderRecommender(view, trophies, state, estimates); setNav('next'); }
+  else if (page === 'regions') { renderRegions(view, trophies, state, estimates, regions); setNav('regions'); }
+  else if (page === 'streak') { renderStreak(view, trophies, state); setNav('streak'); }
+  else if (page === 'timeline') { renderTimeline(view, trophies, state, estimates); setNav('timeline'); }
+  else if (page === 'export') { renderMarkdownExport(view, trophies, state, estimates); setNav('export'); }
   else { renderChecklist(view, trophies, state, controls()); setNav('checklist'); }
   renderProgress(trophies, state);
   updateFilterCount();
+  updateQuickStats();
+}
+
+// The planner strip under the toolbar: hours left, this week's earns, the
+// weekly goal — one line, always current, no page of its own needed.
+function updateQuickStats() {
+  const strip = document.getElementById('quickStats');
+  if (!strip) return;
+  const estimate = platinumTimeEstimate(trophies, state, estimates);
+  const week = earnedThisWeek(state);
+  strip.textContent = `${estimate.remainingHours} hours left to the platinum · ${week} earned this week · goal ${weeklyGoal(state)}/week`;
 }
 
 function applySettings() {
