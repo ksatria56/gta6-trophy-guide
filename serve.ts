@@ -3,7 +3,7 @@
 // (`--port <n>` for another port). It sends the MIME types a browser needs, refuses any
 // path outside app/, and otherwise does nothing clever: a development convenience,
 // not a web server for the internet.
-import { createReadStream, statSync } from 'node:fs';
+import { createReadStream, readFileSync, statSync } from 'node:fs';
 import { createServer } from 'node:http';
 import { extname, join, normalize, resolve, sep } from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -35,6 +35,37 @@ createServer((request, response) => {
     pathname = decodeURIComponent(url.pathname);
   } catch {
     response.writeHead(400).end('bad request');
+    return;
+  }
+  // Round 6: a read-only plan endpoint — the same hours table the Time to
+  // platinum page reads, summed per region, so another tool can quote the
+  // plan without opening the page. Static files are served below, unchanged.
+  if (pathname === '/plan.json') {
+    try {
+      const doc = JSON.parse(readFileSync(join(root, 'data', 'trophies.json'), 'utf8'));
+      const byRegion = {};
+      let totalHours = 0;
+      for (const trophy of doc.trophies) {
+        const row = doc.estimates?.[trophy.id];
+        if (!row) continue;
+        totalHours += row.h;
+        byRegion[row.r] = (byRegion[row.r] ?? 0) + row.h;
+      }
+      const payload = JSON.stringify({ totalHours, regions: byRegion, trophies: doc.trophies.length });
+      response.writeHead(200, { 'content-type': 'application/json; charset=utf-8', 'content-length': Buffer.byteLength(payload) });
+      response.end(payload);
+    } catch {
+      response.writeHead(500).end('plan unavailable');
+    }
+    return;
+  }
+  // Round 6 (part 2): a health endpoint beside the plan endpoint — a load
+  // balancer or a smoke test can ask whether the guide is up without
+  // fetching the whole page. Static files are served below, unchanged.
+  if (pathname === '/health') {
+    const payload = JSON.stringify({ ok: true, app: 'leonida-ledger', trophies: 55 });
+    response.writeHead(200, { 'content-type': 'application/json; charset=utf-8', 'content-length': Buffer.byteLength(payload) });
+    response.end(payload);
     return;
   }
   if (pathname.endsWith('/')) pathname += 'index.html';
