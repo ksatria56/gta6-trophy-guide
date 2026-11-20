@@ -185,6 +185,18 @@ html[data-theme="night"] .tag.missable { background: #3a1713; }
 .callout { background: var(--panel); border: 1px solid var(--line); border-radius: var(--radius); padding: 14px 16px; margin-bottom: 16px; }
 .callout p { margin: 4px 0; }
 .empty { color: var(--muted); padding: 24px 0; }
+.pickBox { background: var(--panel); border: 1px solid var(--line); border-radius: var(--radius); padding: 14px 16px; margin-bottom: 16px; }
+.pickIntro { margin: 0 0 10px; font-weight: 700; }
+.pickResult { margin-top: 12px; }
+.pickResult .empty { padding: 4px 0 0; }
+.pickCard { border-top: 1px solid var(--line); padding-top: 12px; }
+.pickCard .pickCount { margin: 0 0 6px; color: var(--muted); font-size: 13px; }
+.pickActions { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 10px; }
+.pickHistory { margin: 8px 0 0; color: var(--muted); font-size: 12px; }
+.pickBox .ghost { margin-top: 10px; }
+.plannerNote { margin: 12px 0 0; font-weight: 700; }
+.hint { margin: 6px 0 0; font-size: 13px; border-left: 3px solid var(--gold); padding-left: 8px; }
+.stageTip { font-size: 13px; font-style: italic; }
 #colophon { padding: 18px 32px 28px; border-top: 1px solid var(--line); color: var(--muted); font-size: 12px; max-width: 1240px; }
 #colophon a { color: var(--accent); }
 @media (max-width: 760px) {
@@ -193,3 +205,6 @@ html[data-theme="night"] .tag.missable { background: #3a1713; }
   .trophyRow { grid-template-columns: 30px 1fr; }
   .medal, .trophyRow .openBtn { display: none; }
 }
+
+/* Round 5: keep the picker's buttons from wrapping mid-label on narrow screens. */
+.pickActions button { white-space: nowrap; }
