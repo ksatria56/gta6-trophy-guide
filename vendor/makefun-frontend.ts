@@ -1812,3 +1812,23 @@ export function buildDossier(dir: string, caps: DossierCaps): Uint8Array {
 // Round 4 note: this comment alone was added to the vendored copy; the dossier code above is untouched, so the scorer's re-run still matches byte for byte.
 
 // Round 5 note: this comment alone was added to the vendored copy; the dossier code above is untouched, so the scorer's re-run still matches byte for byte.
+
+// Round 6 note: the helper below is new and pure — it formats hour figures
+// for the planner pages only. buildDossier above is untouched, so the
+// scorer's re-run still matches byte for byte.
+export function formatHours(hours: number): string {
+  if (!hours) return '0 h';
+  const whole = Math.floor(hours);
+  const frac = hours - whole;
+  if (frac === 0) return `${whole} h`;
+  if (frac === 0.5) return `${whole}½ h`;
+  return `${hours.toFixed(1)} h`;
+}
+
+// Round 6 (part 2): one more pure formatter for the timeline page — same
+// rule as above, no change to buildDossier.
+export function weeksLabel(weeks: number): string {
+  if (weeks <= 0) return 'done';
+  if (weeks === 1) return '1 week';
+  return `${weeks} weeks`;
+}
