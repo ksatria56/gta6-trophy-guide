@@ -52,10 +52,15 @@ createServer((request, response) => {
     response.writeHead(404).end('not found');
     return;
   }
+  // No referrer is sent for local files: the guide is offline, and its pages
+  // link out only from the colophon.
   response.writeHead(200, {
     'content-type': MIME[extname(file).toLowerCase()] ?? 'application/octet-stream',
     'content-length': size,
     'cache-control': 'no-store',
+    'x-content-type-options': 'nosniff',
+    'x-frame-options': 'DENY',
+    'referrer-policy': 'no-referrer',
   });
   createReadStream(file).pipe(response);
 }).listen(port, '127.0.0.1', () => {

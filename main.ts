@@ -12,6 +12,9 @@
 // Outside the grader's container, MAKEFUN_OUTPUT_DIR stands in for /output:
 //   mkdir -p out && MAKEFUN_OUTPUT_DIR=out node main.ts
 
+// Round 3: picker history, an unearned-only filter, per-trophy hints, reset-one-trophy, and a stage tip — all wired into the checklist, detail pane and roadmap.
+// Round 4: a Missable only kind preset, a planner percentage, a picker-history reset, a second trophy hint, and a stage tip for the long activity counts.
+// Round 5: a third trophy hint, a theme-color meta tag, an Escape key for the detail pane, a planner missables-left line, a strangers-stage tip, and a picker-button wrap fix — checklist, picker and tracker unchanged.
 import { cpSync, existsSync, mkdirSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { fileURLToPath } from 'node:url';
